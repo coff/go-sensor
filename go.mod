@@ -1,4 +1,4 @@
-module coff/sensor
+module github.com/coff/go-sensor
 
 go 1.17
 
