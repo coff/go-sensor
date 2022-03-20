@@ -5,27 +5,41 @@ import (
 	"time"
 )
 
+type State uint
+
+const (
+	Inactive State = iota + 1
+	Active
+	Outdated
+)
+
 type iSensor interface {
-	Reading() (float64, error)
+	Reading() (float64, State, error)
+	ReadingAge() (time.Duration, error)
+	Name() string
 }
 
 type Options struct {
-	name            string
-	readingValidity time.Duration
+	Name            string
+	ReadingValidity time.Duration
 }
 
 type Sensor struct {
 	value       float64
+	State       State
 	UpdatedTime time.Time
 	options     Options
 }
 
 func (s *Sensor) IsReadingValid() bool {
-	if s.UpdatedTime.IsZero() {
+
+	age, err := s.ReadingAge()
+
+	if err != nil {
 		return false
 	}
 
-	outdated := time.Now().Sub(s.UpdatedTime) - s.options.readingValidity
+	outdated := age - s.options.ReadingValidity
 
 	if outdated.Seconds() > 0 {
 		return false
@@ -34,23 +48,40 @@ func (s *Sensor) IsReadingValid() bool {
 	return true
 }
 
-func (s *Sensor) Reading() (float64, error) {
+func (s *Sensor) Reading() (float64, State, error) {
 
-	if s.UpdatedTime.IsZero() {
-		return 0, fmt.Errorf("no sensor reading available (yet?) for %s sensor", s.options.name)
+	age, err := s.ReadingAge()
+
+	if err != nil {
+		return 0, s.State, err
 	}
 
-	outdated := time.Now().Sub(s.UpdatedTime) - s.options.readingValidity
+	outdated := age - s.options.ReadingValidity
 
 	if outdated.Seconds() > 0 {
+		s.State = Outdated
 		// returns value anyway but with error message
-		return s.value, fmt.Errorf("time value outdated %d seconds for %s sensor", outdated.Seconds(), s.options.name)
+		return s.value, s.State, fmt.Errorf("time value outdated %d seconds for %s sensor", outdated.Seconds(), s.options.Name)
 	}
-	return s.value, nil
+
+	return s.value, s.State, nil
+}
+
+func (s *Sensor) ReadingAge() (time.Duration, error) {
+	if s.UpdatedTime.IsZero() {
+		return 0, fmt.Errorf("no sensor reading available (yet?) for sensor '%s'", s.options.Name)
+	}
+
+	return time.Now().Sub(s.UpdatedTime), nil
+}
+
+func (s *Sensor) Name() string {
+	return s.options.Name
 }
 
 func (s *Sensor) SetValue(value float64) *Sensor {
 	s.UpdatedTime = time.Now()
+	s.State = Active
 	s.value = value
 	return s
 }
