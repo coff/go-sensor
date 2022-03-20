@@ -31,6 +31,18 @@ type Sensor struct {
 	options     Options
 }
 
+func (s State) String() string {
+	switch s {
+	case Inactive:
+		return "inactive"
+	case Active:
+		return "active"
+	case Outdated:
+		return "outdated"
+	}
+	return "unknown"
+}
+
 func (s *Sensor) IsReadingValid() bool {
 
 	age, err := s.ReadingAge()
