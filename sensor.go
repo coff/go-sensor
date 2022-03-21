@@ -20,8 +20,8 @@ type ISensor interface {
 }
 
 type Options struct {
-	Name            string
-	ReadingValidity time.Duration
+	Name          string
+	MaxReadingAge time.Duration
 }
 
 type Sensor struct {
@@ -51,7 +51,7 @@ func (s *Sensor) IsReadingValid() bool {
 		return false
 	}
 
-	outdated := age - s.options.ReadingValidity
+	outdated := age - s.options.MaxReadingAge
 
 	if outdated.Seconds() > 0 {
 		return false
@@ -68,7 +68,7 @@ func (s *Sensor) Reading() (float64, State, error) {
 		return 0, s.State, err
 	}
 
-	outdated := age - s.options.ReadingValidity
+	outdated := age - s.options.MaxReadingAge
 
 	if outdated.Seconds() > 0 {
 		s.State = Outdated
