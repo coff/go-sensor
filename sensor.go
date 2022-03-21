@@ -13,7 +13,7 @@ const (
 	Outdated
 )
 
-type iSensor interface {
+type ISensor interface {
 	Reading() (float64, State, error)
 	ReadingAge() (time.Duration, error)
 	Name() string
