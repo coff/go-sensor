@@ -19,6 +19,13 @@ type ISensor interface {
 	Name() string
 }
 
+type IReporter interface {
+	ReportTo()
+	SetValue(value float64)
+}
+
+type PropagateFunc func(sensor ISensor)
+
 type Options struct {
 	Name          string
 	MaxReadingAge time.Duration
@@ -29,6 +36,7 @@ type Sensor struct {
 	State       State
 	UpdatedTime time.Time
 	options     Options
+	Propagate   PropagateFunc
 }
 
 func (s State) String() string {
@@ -91,9 +99,12 @@ func (s *Sensor) Name() string {
 	return s.options.Name
 }
 
-func (s *Sensor) SetValue(value float64) *Sensor {
+func (s *Sensor) SetValue(value float64) {
 	s.UpdatedTime = time.Now()
 	s.State = Active
 	s.value = value
-	return s
+
+	if s.Propagate != nil {
+		s.Propagate(s)
+	}
 }
